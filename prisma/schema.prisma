@@ -1,0 +1,39 @@
+// Definir el proveedor de base de datos (PostgreSQL en Neon)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Definir el modelo de usuario
+model User {
+  id        String   @id @default(uuid()) // ID único generado como UUID
+  nombre    String   @db.VarChar(100)
+  correo    String   @unique // Correo debe ser único
+  contraseña String  // Guardaremos la contraseña encriptada
+  rol       Role     @default(REGULAR) // Rol por defecto
+  isActive  Boolean  @default(true) // Soft delete: si es false, se considera "eliminado"
+  personajes Personaje[] // Relación con Personaje (Un usuario puede tener varios personajes)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Definir el modelo de personaje
+model Personaje {
+  id       String  @id @default(uuid())
+  nombre   String  @db.VarChar(100)
+  foto     String  @db.Text
+  userId   String  // Relación con el usuario
+  usuario  User    @relation(fields: [userId], references: [id], onDelete: Cascade) // Borra personajes si el usuario es eliminado
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Definir los roles disponibles
+enum Role {
+  ADMIN
+  REGULAR
+}
