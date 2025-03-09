@@ -17,8 +17,8 @@ const app = express();
 
 // Configuración de CORS mejorada
 const allowedOrigins = [
-  "https://frontend-personajes-usuarios-mcw7.vercel.app/", // URL de Vercel
-  "http://localhost:3000", // URL de desarrollo local
+  "https://frontend-personajes-usuarios-mcw7.vercel.app", // URL de Vercel sin barra final
+  "http://localhost:3000",
 ];
 
 app.use(
