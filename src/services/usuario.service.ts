@@ -7,16 +7,31 @@ const prisma = new PrismaClient();
 
 export class UsuarioService {
   // Registrar usuario: encripta la contraseña y crea el registro en la BD
-  static async registrar(nombre: string, correo: string, contraseña: string) {
+  static async registrar(
+    nombre: string,
+    correo: string,
+    contraseña: string,
+    rol?: string,
+    isActive?: boolean
+  ) {
     const hashedPassword = await bcrypt.hash(contraseña, 10);
+
+    // Preparar datos básicos
+    const userData: any = {
+      nombre,
+      correo,
+      contraseña: hashedPassword,
+      // Por defecto es REGULAR según schema
+    };
+
+    // Agregar campos opcionales si están definidos
+    if (rol) userData.rol = rol;
+    if (isActive !== undefined) userData.isActive = isActive;
+
     const nuevoUsuario = await prisma.user.create({
-      data: {
-        nombre,
-        correo,
-        contraseña: hashedPassword,
-        // El rol se asigna por defecto REGULAR según el schema
-      },
+      data: userData,
     });
+
     return nuevoUsuario;
   }
 
@@ -61,5 +76,13 @@ export class UsuarioService {
       where: { id },
       data: { isActive: false },
     });
+  }
+
+  // c:\Users\jonna\OneDrive\Escritorio\backend + frontend\backend\src\services\usuario.service.ts
+  // Añadir este método a la clase UsuarioService en el archivo existente
+
+  // Buscar usuario por ID
+  static async buscarPorId(id: string) {
+    return prisma.user.findUnique({ where: { id } });
   }
 }

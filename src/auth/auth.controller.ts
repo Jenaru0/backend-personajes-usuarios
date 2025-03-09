@@ -1,15 +1,7 @@
-// src/auth/auth.controller.ts
-
+// c:\Users\jonna\OneDrive\Escritorio\backend + frontend\backend\src\auth\auth.controller.ts
 import { Request, Response, NextFunction } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { AuthService } from "./auth.service";
 import { UsuarioService } from "../services/usuario.service";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-// Se obtiene la clave secreta del JWT desde las variables de entorno
-const JWT_SECRET = process.env.JWT_SECRET || "supersecreto";
 
 export class AuthController {
   // Registrar usuario
@@ -19,14 +11,30 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Extraer datos del body
-      const { nombre, correo, contraseña } = req.body;
-      // Registrar el usuario (la contraseña se encripta en el servicio)
+      // Extraer datos del body incluyendo campos opcionales
+      const { nombre, correo, contraseña, rol, isActive } = req.body;
+
+      // Determinar si es admin basado en el usuario O en la ruta
+      const isAdminUser = (req as any).user?.rol === "ADMIN";
+      const isAdminRoute = req.originalUrl.includes("/register/admin");
+      const isAdmin = isAdminUser || isAdminRoute;
+
+      // Verificar si el correo ya está registrado
+      const existingUser = await UsuarioService.buscarPorCorreo(correo);
+      if (existingUser) {
+        res.status(400).json({ error: "El correo ya está registrado" });
+        return;
+      }
+
+      // Registrar el usuario con los datos proporcionados
       const nuevoUsuario = await UsuarioService.registrar(
         nombre,
         correo,
-        contraseña
+        contraseña,
+        isAdmin ? rol : undefined, // Permitir rol si es admin o ruta admin
+        isAdmin ? isActive : undefined // Permitir estado si es admin o ruta admin
       );
+
       // Responder sin incluir la contraseña
       res.status(201).json({
         message: "Usuario registrado exitosamente",
@@ -50,20 +58,35 @@ export class AuthController {
   ): Promise<void> {
     try {
       const { correo, contraseña } = req.body;
-      // Buscar usuario por correo
-      const usuario = await UsuarioService.buscarPorCorreo(correo);
-      // Validar existencia y comparar la contraseña
-      if (!usuario || !(await bcrypt.compare(contraseña, usuario.contraseña))) {
-        res.status(401).json({ error: "Credenciales inválidas" });
+      const result = await AuthService.login(correo, contraseña);
+      res.json({
+        message: "Login exitoso",
+        token: result.accessToken,
+        refreshToken: result.refreshToken,
+        usuario: result.usuario,
+      });
+    } catch (error: any) {
+      res.status(401).json({ error: error.message });
+    }
+  }
+
+  // Renovar token de acceso usando refresh token
+  static async refreshToken(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        res.status(400).json({ error: "Refresh token requerido" });
         return;
       }
-      // Generar token JWT con duración de 5 minutos
-      const token = jwt.sign({ id: usuario.id, rol: usuario.rol }, JWT_SECRET, {
-        expiresIn: "5m",
-      });
-      res.json({ message: "Login exitoso", token });
-    } catch (error) {
-      next(error);
+
+      const result = await AuthService.refreshToken(refreshToken);
+      res.json({ token: result.accessToken });
+    } catch (error: any) {
+      res.status(401).json({ error: error.message });
     }
   }
 }

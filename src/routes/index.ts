@@ -9,14 +9,15 @@ router.get("/", (req, res) => {
   res.json({ message: "¡Servidor funcionando correctamente!" });
 });
 
-// Carga dinámica de rutas: se cargan todos los archivos de la carpeta que no sean este
+// Carga dinámica de rutas
 const cleanFileName = (fileName: string) => fileName.split(".").shift();
 
 readdirSync(PATH_ROUTER).forEach((filename) => {
   const cleanName = cleanFileName(filename);
   if (cleanName && cleanName !== "index") {
     import(`./${cleanName}`).then((moduleRouter) => {
-      router.use(`/${cleanName}`, moduleRouter.router);
+      // Corregido: usar .default en lugar de .router
+      router.use(`/${cleanName}`, moduleRouter.default);
     });
   }
 });

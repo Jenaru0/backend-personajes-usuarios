@@ -1,11 +1,9 @@
+// c:\Users\jonna\OneDrive\Escritorio\backend + frontend\backend\src\middlewares\auth.middleware.ts
 // src/middlewares/auth.middleware.ts
 
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-
-dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET || "supersecreto";
+import env from "../config/env";
 
 /**
  * Middleware para validar el token JWT en las peticiones.
@@ -17,9 +15,18 @@ export const authMiddleware: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: "No se proporcionó token" });
     return;
   }
-  const token = authHeader.split(" ")[1]; // Se espera formato "Bearer token"
+
+  // Mejor manejo del formato de token
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") {
+    res.status(401).json({ error: "Formato de token inválido" });
+    return;
+  }
+
+  const token = parts[1];
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, env.JWT_SECRET);
     (req as any).user = decoded; // Se agrega la info del usuario a la petición
     next();
   } catch (err) {

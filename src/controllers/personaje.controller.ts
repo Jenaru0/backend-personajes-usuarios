@@ -102,4 +102,55 @@ export class PersonajeController {
       next(error);
     }
   }
+
+  // Listar todos los personajes (para ADMIN)
+  static async listarTodos(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const personajes = await PersonajeService.listarTodos();
+      res.json({ personajes });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Actualizar cualquier personaje (para ADMIN)
+  static async actualizarCualquiera(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+      const personajeActualizado = await PersonajeService.actualizarCualquiera(
+        id,
+        data
+      );
+      res.json({
+        message: "Personaje actualizado",
+        personaje: personajeActualizado,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Eliminar cualquier personaje (para ADMIN)
+  static async eliminarCualquiera(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+      await PersonajeService.eliminarCualquiera(id);
+      res.json({ message: "Personaje eliminado" });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

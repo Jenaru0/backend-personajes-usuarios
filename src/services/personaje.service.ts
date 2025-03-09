@@ -56,4 +56,36 @@ export class PersonajeService {
     }
     return prisma.personaje.delete({ where: { id } });
   }
+
+  // Listar todos los personajes (para ADMIN)
+  static async listarTodos() {
+    return prisma.personaje.findMany({
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            nombre: true,
+            correo: true,
+          },
+        },
+      },
+    });
+  }
+
+  // Actualizar cualquier personaje (para ADMIN)
+  static async actualizarCualquiera(
+    id: string,
+    data: { nombre?: string; foto?: string }
+  ) {
+    // Un admin puede actualizar cualquier personaje sin verificar el usuario
+    return prisma.personaje.update({
+      where: { id },
+      data,
+    });
+  }
+
+  // Eliminar cualquier personaje (para ADMIN)
+  static async eliminarCualquiera(id: string) {
+    return prisma.personaje.delete({ where: { id } });
+  }
 }
